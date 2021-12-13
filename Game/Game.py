@@ -39,7 +39,7 @@ SCROLL_THRESH = 200
 ROWS = 16
 COLS = 50
 TILE_SIZES = SCREEN_HEIGHT // ROWS
-TILE_TYPES = 53
+TILE_TYPES = 70
 level = 1
 MAX_LEVELS = 6
 
@@ -57,13 +57,13 @@ import pygame
 import os
 import random
 import csv
+from pygame.locals import *
+pygame.mixer.pre_init(44100, -16, 2, 512)
 
 screen_scroll = 0
 bg_scroll = 0
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-
 # Player class: adjust how player will be in the game
 class Character(pygame.sprite.Sprite):
     """Character Load For PLayer and Enemies"""
@@ -100,7 +100,7 @@ class Character(pygame.sprite.Sprite):
         self.idling = False
         self.idling_counter = 0
 
-        animation_types = ['Idle', 'Run', 'Jump', 'Death']
+        animation_types = ['Idle', 'Run', 'Jump', 'Death', 'Shoot']
         for animation in animation_types:
             # Reset temporary list of image
             temp_list = []
@@ -246,14 +246,14 @@ class Character(pygame.sprite.Sprite):
             # check if the ai in meat the player
             if self.vision.colliderect(player.rect) and not self.in_air and self.vel_y < 1:
                 # stop running and shoot player
-                self.update_action(0)
+                self.update_action(4)
                 # shoot
                 self.shoot()
             elif self.vision_2.colliderect(player.rect) and not self.in_air and self.vel_y < 1:
                 self.flip = True
                 self.direction *= -1
                 # stop running and shoot player
-                self.update_action(0)
+                self.update_action(4)
                 # shoot
                 self.shoot()
             else:
@@ -369,9 +369,9 @@ class World():
                     img_rect.x = x * TILE_SIZES
                     img_rect.y = y * TILE_SIZES
                     tile_data = (img, img_rect)
-                    if 0 <= tile <= 11:
+                    if 0 <= tile <= 11 or 60 <= tile <= 62:
                         self.obstacle_list.append(tile_data)
-                    elif 12 <= tile <= 23:
+                    elif 12 <= tile <= 23 or 63 <= tile <= 65:
                         invisible = Invisible(img, x * TILE_SIZES, y * TILE_SIZES)
                         invisible_group.add(invisible)
                     elif 24 <= tile <= 25:
@@ -413,10 +413,10 @@ class World():
                     elif tile == 38:
                         trap = Invisible_Trap(img, x * TILE_SIZES, y * TILE_SIZES)
                         invisible_trap_group.add(trap)
-                    elif 39 <= tile <= 40:
+                    elif 39 <= tile <= 40 or 68 <= tile <= 69:
                         trap = Falling(img, x * TILE_SIZES, y * TILE_SIZES)
                         falling_group.add(trap)
-                    elif 41 <= tile <= 52:
+                    elif 41 <= tile <= 59 or 66 <= tile <= 67:
                         deco = Decoration(img, x * TILE_SIZES, y * TILE_SIZES)
                         decoration_group.add(deco)
 
@@ -456,7 +456,7 @@ class Bullet(pygame.sprite.Sprite):
         self.speed = 5
         self.image = ammo_type
         self.rect = self.image.get_rect()
-        self.rect.center = (x, y)
+        self.rect.center = (x, y - 15)
         self.direction = direction
         if self.direction < 0:
             self.image = pygame.transform.flip(self.image, True, False)
@@ -815,6 +815,7 @@ class Button():
 start_image = pygame.image.load('img/Variable/Button/start_button.png').convert_alpha()
 exit_image = pygame.image.load('img/Variable/Button/exit_button.png').convert_alpha()
 restart_image = pygame.image.load('img/Variable/Button/restart_button.png').convert_alpha()
+wallpaper = pygame.image.load('img/Variable/Wallpaper.png')
 
 start_button = Button(SCREEN_WIDTH // 2 - 190, SCREEN_HEIGHT // 2 - 200, start_image, 2)
 exit_button = Button(SCREEN_WIDTH // 2 - 190, SCREEN_HEIGHT // 2 + 100, exit_image, 2)
@@ -876,17 +877,17 @@ font = pygame.font.SysFont('Futura', 30)
 # Load images
 # Background images
 sky_image = pygame.image.load('img/Background/Sky.png').convert_alpha()
-sky_image = pygame.transform.scale(sky_image, (int(sky_image.get_width() * BG_SCALE),
-                                               int(sky_image.get_height()) * BG_SCALE))
-mountain_image = pygame.image.load('img/Background/Mountain.png').convert_alpha()
-mountain_image = pygame.transform.scale(mountain_image, (int(mountain_image.get_width() * BG_SCALE),
-                                                         int(mountain_image.get_height()) * BG_SCALE))
-forest_image_1 = pygame.image.load('img/Background/Forest small.png').convert_alpha()
-forest_image_1 = pygame.transform.scale(forest_image_1, (int(forest_image_1.get_width() * BG_SCALE),
-                                                         int(forest_image_1.get_height()) * BG_SCALE))
-forest_image_2 = pygame.image.load('img/Background/Forest small 2.png').convert_alpha()
-forest_image_2 = pygame.transform.scale(forest_image_2, (int(forest_image_2.get_width() * BG_SCALE),
-                                                         int(forest_image_2.get_height()) * BG_SCALE))
+sky_image = pygame.transform.scale(sky_image, (int(sky_image.get_width() ),
+                                               int(sky_image.get_height()) ))
+# mountain_image = pygame.image.load('img/Background/Mountain.png').convert_alpha()
+# mountain_image = pygame.transform.scale(mountain_image, (int(mountain_image.get_width() * BG_SCALE),
+#                                                         int(mountain_image.get_height()) * BG_SCALE))
+# forest_image_1 = pygame.image.load('img/Background/Forest small.png').convert_alpha()
+# forest_image_1 = pygame.transform.scale(forest_image_1, (int(forest_image_1.get_width() * BG_SCALE),
+#                                                         int(forest_image_1.get_height()) * BG_SCALE))
+# forest_image_2 = pygame.image.load('img/Background/Forest small 2.png').convert_alpha()
+# forest_image_2 = pygame.transform.scale(forest_image_2, (int(forest_image_2.get_width() * BG_SCALE),
+#                                                         int(forest_image_2.get_height()) * BG_SCALE))
 
 
 # field_image = pygame.image.load('img/Background/Field.png').convert_alpha()
@@ -907,9 +908,9 @@ def draw_bg():
 
     for x in range(5):
         screen.blit(sky_image, ((x * width) - bg_scroll, 0))
-        screen.blit(mountain_image, ((x * width) - bg_scroll, SCREEN_HEIGHT - mountain_image.get_height() - 30))
-        screen.blit(forest_image_2, ((x * width) - bg_scroll, SCREEN_HEIGHT - forest_image_2.get_height() - 20))
-        screen.blit(forest_image_1, ((x * width) - bg_scroll, SCREEN_HEIGHT - forest_image_1.get_height() - 20))
+        # screen.blit(mountain_image, ((x * width) - bg_scroll, SCREEN_HEIGHT - mountain_image.get_height() - 30))
+        # screen.blit(forest_image_2, ((x * width) - bg_scroll, SCREEN_HEIGHT - forest_image_2.get_height() - 20))
+        # screen.blit(forest_image_1, ((x * width) - bg_scroll, SCREEN_HEIGHT - forest_image_1.get_height() - 20))
         # screen.blit(field_image, ((x * width) - bg_scroll, SCREEN_HEIGHT - field_image.get_height()))
 
 
@@ -940,13 +941,19 @@ def reset_level():
 
 # Run the game YAY!!!
 run = True
+soundtrack = pygame.mixer.Sound('music/Soundtrack.wav')
+soundtrack.set_volume(0.02)
+fallingleaf = pygame.mixer.Sound('music/Fallingleaf.wav')
+pygame.mixer.music.load('music/Intro.wav')
+pygame.mixer.music.set_volume(0.1)
+pygame.mixer.music.play(-1)
 while run:
-
+    
     clock.tick(FPS)
-
+    
     if not start_game:
         # Draw main menu
-        screen.fill(BG)
+        screen.blit(wallpaper, (0,0))
         # Add buttons
         if start_button.draw(screen):
             start_game = True
@@ -1011,6 +1018,7 @@ while run:
 
         if player.alive:
             # Update player actions
+            soundtrack.play()
             if shoot:
                 player.shoot()
             elif grenade and not grenade_thrown and player.grenades > 0:
@@ -1021,7 +1029,9 @@ while run:
                 grenade_group.add(grenade)
                 player.grenades -= 1
                 grenade_thrown = True
-            if player.in_air:
+            if shoot:
+                player.update_action(4)
+            elif player.in_air:
                 player.update_action(2)  # 2 : Jump
             elif move_left or move_right:
                 player.update_action(1)  # 1 : Run
@@ -1073,12 +1083,14 @@ while run:
                             world_data[x][y] = int(tile)
                 world = World()
                 player, health_bar = world.process_data(world_data)
-
     for event in pygame.event.get():
         # Quit Game Event
         if event.type == pygame.QUIT:
             run = False
-
+        if player.alive == False:
+            soundtrack.fadeout(1000)
+        if start_game == True:
+            pygame.mixer.music.fadeout(1000)
         # Checking keys press or not?
         # Pressing keys...
         if event.type == pygame.KEYDOWN:
