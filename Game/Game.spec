@@ -4,7 +4,7 @@
 block_cipher = None
 
 
-a = Analysis(['Game.py'],
+a = Analysis(['C:\\Users\\sahad\\OneDrive\\Desktop\\PSIT_Project_TTMP-main\\Game\\Game.py'],
              pathex=[],
              binaries=[],
              datas=[],
@@ -37,4 +37,4 @@ exe = EXE(pyz,
           disable_windowed_traceback=False,
           target_arch=None,
           codesign_identity=None,
-          entitlements_file=None )
+          entitlements_file=None , icon='C:\\Users\\sahad\\OneDrive\\Desktop\\PSIT_Project_TTMP-main\\Game\\icon.ico')
