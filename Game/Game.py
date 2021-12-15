@@ -148,7 +148,8 @@ class Character(pygame.sprite.Sprite):
 
         # Jump
         if self.jump and not self.in_air:
-            jump_fx.play(0)
+            if level != 6:
+                jump_fx.play(0)
             self.vel_y = -11
             self.jump = False
             self.in_air = True
@@ -1140,7 +1141,8 @@ while run:
 
         # Running Sound
             if move_left or move_right:
-                run_fx.play(0)
+                if level != 6:
+                    run_fx.play(0)
 
 
     pygame.display.update()
