@@ -1093,7 +1093,7 @@ while run:
 
         else:
             screen_scroll = 0
-            level = 5
+            level = level
             screen.blit(game_over_image, (200, 125))
             if restart_button.draw(screen):
                 bg_scroll = 0
