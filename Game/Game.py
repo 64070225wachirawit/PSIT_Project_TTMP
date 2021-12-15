@@ -20,7 +20,7 @@ start_game = False
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 720
 
-BG = (0, 105, 255)
+BG = (46, 46, 41)
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
@@ -58,11 +58,10 @@ import os
 import random
 import csv
 from pygame.locals import *
-pygame.mixer.pre_init(44100, -16, 2, 512)
 
 screen_scroll = 0
 bg_scroll = 0
-
+pygame.display.set_icon(pygame.image.load('icon.png'))
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 # Player class: adjust how player will be in the game
 class Character(pygame.sprite.Sprite):
@@ -119,6 +118,8 @@ class Character(pygame.sprite.Sprite):
         self.width = self.image.get_width()
         self.height = self.image.get_height()
 
+        self.play_sound = False
+
     def update(self):
         """Update"""
         self.update_animation()
@@ -147,6 +148,7 @@ class Character(pygame.sprite.Sprite):
 
         # Jump
         if self.jump and not self.in_air:
+            jump_fx.play(0)
             self.vel_y = -11
             self.jump = False
             self.in_air = True
@@ -163,7 +165,7 @@ class Character(pygame.sprite.Sprite):
             if tile[1].colliderect(self.rect.x + dx, self.rect.y, self.width, self.height):
                 dx = 0
                 # if the AI has hit a wall then make it turn around:
-                if self.char_type == 'Target' or self.char_type == 'Skeleton':
+                if self.char_type == 'Enemy' or self.char_type == 'Enemy_2':
                     self.direction = -1
                     self.move_counter = 0
             # Check collision in the y direction
@@ -227,6 +229,7 @@ class Character(pygame.sprite.Sprite):
     def shoot(self):
         """Shoot"""
         if self.shoot_cool_down == 0 and self.ammo > 0:
+            gunfire.play(0)
             self.shoot_cool_down = BULLET_COOL_DOWN
             bullet = Bullet(self.rect.centerx
                             + (0.8 * self.rect.size[0] * self.direction),
@@ -313,6 +316,9 @@ class Character(pygame.sprite.Sprite):
             self.speed = 0
             self.alive = False
             self.update_action(3)
+            if self.char_type == 'Player' and not self.play_sound:
+                gameover.play(0)
+                self.play_sound = True
 
     # Draw player on the screen!!!
     def draw(self):
@@ -330,8 +336,7 @@ for x in range(TILE_TYPES):
     img_list.append(img)
 
 # Load Bullet image
-bullet = pygame.image.load('img/Variable/Bullet/bullet.png').convert_alpha()
-arrow = pygame.image.load('img/Variable/Bullet/Arrow.png').convert_alpha()
+bullet = pygame.image.load('img/Variable/Bullet/Bullet.png').convert_alpha()
 
 # Load Grenade image
 grenades = pygame.image.load('img/Variable/Grenade/0.png').convert_alpha()
@@ -388,15 +393,15 @@ class World():
                         item_group.add(item)
                     elif tile == 29:
                         player = Character('Player', 100, x * TILE_SIZES, y * TILE_SIZES, CHA_SCALE, PLAYER_SPEED, 20,
-                                           arrow, 1, grenades)
+                                           bullet, 1, grenades)
                         health_bar = Health_bar(85, 9, player.health, player.health)
                     elif tile == 30:
-                        enemy = Character('Target', 10, x * TILE_SIZES, y * TILE_SIZES, CHA_SCALE, ENEMY_SPEED, 9999,
+                        enemy = Character('Enemy', 10, x * TILE_SIZES, y * TILE_SIZES, CHA_SCALE, ENEMY_SPEED, 9999,
                                           bullet, 0, grenades)
                         enemy_group.add(enemy)
                     elif tile == 31:
-                        enemy2 = Character('Skeleton', 10, x * TILE_SIZES, y * TILE_SIZES, CHA_SCALE, ENEMY_SPEED, 9999,
-                                           arrow, 0, grenades)
+                        enemy2 = Character('Enemy_2', 10, x * TILE_SIZES, y * TILE_SIZES, CHA_SCALE, ENEMY_SPEED, 9999,
+                                           bullet, 0, grenades)
                         enemy_group.add(enemy2)
                     elif tile == 32:
                         campfire = Campfire(x * TILE_SIZES, y * TILE_SIZES)
@@ -435,18 +440,10 @@ class Health_bar:
         self.y = y
         self.health = health
         self.max_health = max_health
-        self.red_bar = pygame.image.load('img/Variable/Bar/Red_bar.png')
-        self.green_bar = pygame.image.load('img/Variable/Bar/Green_bar.png')
 
     def draw(self, health):
         # Update with new health
         self.health = health
-        # Calculate health ratio
-        pygame.draw.rect(screen, BLACK, (self.x + 2, self.y + 14, 206, 30))
-        for x in range(player.max_health):
-            screen.blit(self.red_bar, (90 + (x * 2), 25))
-        for x in range(player.health):
-            screen.blit(self.green_bar, (90 + (x * 2), 25))
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -558,12 +555,16 @@ class Explosion(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         self.counter = 0
+        self.play_sound = False
 
     def update(self):
         # Scroll
         self.rect.x += screen_scroll
         EXPLOSION_SPEED = 4
         # Update explosion animation
+        if not self.play_sound:
+            grenadesound.play(0)
+            self.play_sound = True
         self.counter += 1
 
         if self.counter >= EXPLOSION_SPEED:
@@ -644,13 +645,17 @@ class Falling(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.midtop = (x + TILE_SIZES // 2, y + (TILE_SIZES - self.image.get_height()))
         self.falling = False
+        self.play_sound = False
 
     def update(self):
         """Update"""
         self.rect.x += screen_scroll
         # Check if player near the stick
         if abs(self.rect.centerx - player.rect.centerx) < TILE_SIZES and self.rect.y <= player.rect.y \
-                or self.falling == True:
+                or self.falling:
+            if not self.play_sound:
+                fallingleaf.play(0)
+                self.play_sound = True
             self.rect.y += 5
             self.falling = True
         # Check if falling off screen
@@ -723,7 +728,7 @@ class Previous(pygame.sprite.Sprite):
 
 class Invisible_Trap(pygame.sprite.Sprite):
     def __init__(self, img, x, y):
-        """Remember, you can't swim in game"""
+        """If you can't see, it doesn't mean that it's not there."""
         pygame.sprite.Sprite.__init__(self)
         self.image = img
         self.rect = self.image.get_rect()
@@ -741,7 +746,7 @@ class Invisible_Trap(pygame.sprite.Sprite):
 
 class Decoration(pygame.sprite.Sprite):
     def __init__(self, img, x, y):
-        """Remember, you can't swim in game"""
+        """Wow, beautiful!"""
         pygame.sprite.Sprite.__init__(self)
         self.image = img
         self.rect = self.image.get_rect()
@@ -768,16 +773,18 @@ class Item(pygame.sprite.Sprite):
         if pygame.sprite.collide_rect(self, player):
             # Check what kind of item it was
             if self.item_type == 'Health':
+                collect.play()
                 player.health += 25
                 if player.health > player.max_health:
                     player.health = player.max_health
             if self.item_type == 'Mana':
+                collect.play()
                 player.ammo += 10
             if self.item_type == 'Grenade':
+                collect.play()
                 player.grenades += 2
             # Delete item
             self.kill()
-
 
 # Button class
 class Button():
@@ -815,11 +822,10 @@ class Button():
 start_image = pygame.image.load('img/Variable/Button/start_button.png').convert_alpha()
 exit_image = pygame.image.load('img/Variable/Button/exit_button.png').convert_alpha()
 restart_image = pygame.image.load('img/Variable/Button/restart_button.png').convert_alpha()
-wallpaper = pygame.image.load('img/Variable/Wallpaper.png')
 
-start_button = Button(SCREEN_WIDTH // 2 - 190, SCREEN_HEIGHT // 2 - 200, start_image, 2)
-exit_button = Button(SCREEN_WIDTH // 2 - 190, SCREEN_HEIGHT // 2 + 100, exit_image, 2)
-restart_button = Button(SCREEN_WIDTH // 2 - 180, SCREEN_HEIGHT // 2 - 50, restart_image, 2)
+start_button = Button(SCREEN_WIDTH // 2 - 190, SCREEN_HEIGHT // 2 - 70, start_image, 2)
+exit_button = Button(SCREEN_WIDTH // 2 - 190, SCREEN_HEIGHT // 2 + 120, exit_image, 2)
+restart_button = Button(SCREEN_WIDTH // 2 - 180, SCREEN_HEIGHT // 2 + 20, restart_image, 2)
 
 # Create Sprite groups
 enemy_group = pygame.sprite.Group()
@@ -860,7 +866,7 @@ This is the final path where all the second path will draw on and start to runni
 pygame.init()
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('Platform')
+pygame.display.set_caption('TTMP-PROJECT')
 
 # Set Frame rate
 clock = pygame.time.Clock()
@@ -875,24 +881,38 @@ grenade_thrown = False
 font = pygame.font.SysFont('Futura', 30)
 
 # Load images
-# Background images
-sky_image = pygame.image.load('img/Background/Sky.png').convert_alpha()
-sky_image = pygame.transform.scale(sky_image, (int(sky_image.get_width() ),
-                                               int(sky_image.get_height()) ))
-# mountain_image = pygame.image.load('img/Background/Mountain.png').convert_alpha()
-# mountain_image = pygame.transform.scale(mountain_image, (int(mountain_image.get_width() * BG_SCALE),
-#                                                         int(mountain_image.get_height()) * BG_SCALE))
-# forest_image_1 = pygame.image.load('img/Background/Forest small.png').convert_alpha()
-# forest_image_1 = pygame.transform.scale(forest_image_1, (int(forest_image_1.get_width() * BG_SCALE),
-#                                                         int(forest_image_1.get_height()) * BG_SCALE))
-# forest_image_2 = pygame.image.load('img/Background/Forest small 2.png').convert_alpha()
-# forest_image_2 = pygame.transform.scale(forest_image_2, (int(forest_image_2.get_width() * BG_SCALE),
-#                                                         int(forest_image_2.get_height()) * BG_SCALE))
+wallpaper = pygame.image.load('img/Background/Wallpaper.png')
 
+background_image = pygame.image.load('img/Background/Forest.png').convert_alpha()
+background_image = pygame.transform.scale(background_image, (int(background_image.get_width() ),
+                                               int(background_image.get_height()) ))
+game_over_image = pygame.image.load('img/Variable/Text/Game Over.png').convert_alpha()
+game_over_image = pygame.transform.scale(game_over_image, (int(game_over_image.get_width() * 2.5),
+                                               int(game_over_image.get_height() * 2.5)))
+wasd_image = pygame.image.load('img/Variable/Text/WASD.png').convert_alpha()
+wasd_image = pygame.transform.scale(wasd_image, (int(wasd_image.get_width() * 2.5),
+                                               int(wasd_image.get_height() * 2.5)))
+end_image = pygame.image.load('img/Variable/Text/The end.png').convert_alpha()
+end_image = pygame.transform.scale(end_image, (int(SCREEN_WIDTH),
+                                               int(SCREEN_HEIGHT)))
 
-# field_image = pygame.image.load('img/Background/Field.png').convert_alpha()
-# field_image = pygame.transform.scale(field_image, (int(field_image.get_width() * BG_SCALE),
-# int(field_image.get_height()) * BG_SCALE))
+# Load sound
+fallingleaf = pygame.mixer.Sound('music/Fallingleaf.wav')
+fallingleaf.set_volume(0.3)
+gunfire = pygame.mixer.Sound('music/Gunfire.wav')
+gunfire.set_volume(0.05)
+gameover = pygame.mixer.Sound('music/Gameover.wav')
+gameover.set_volume(0.05)
+run_fx = pygame.mixer.Sound('music/Running.wav')
+run_fx.set_volume(0.1)
+jump_fx = pygame.mixer.Sound('music/Jump.wav')
+jump_fx.set_volume(0.1)
+collect = pygame.mixer.Sound('music/Collect.wav')
+collect.set_volume(0.1)
+grenadesound = pygame.mixer.Sound('music/Grenade.wav')
+grenadesound.set_volume(0.05)
+the_end = pygame.mixer.Sound('music/The End.wav')
+the_end.set_volume(0.1)
 
 
 def draw_text(text, font, text_col, x, y):
@@ -904,14 +924,13 @@ def draw_text(text, font, text_col, x, y):
 def draw_bg():
     """Screen BG Woo!!!"""
     screen.fill(BG)
-    width = sky_image.get_width()
+    width = background_image.get_width()
 
     for x in range(5):
-        screen.blit(sky_image, ((x * width) - bg_scroll, 0))
-        # screen.blit(mountain_image, ((x * width) - bg_scroll, SCREEN_HEIGHT - mountain_image.get_height() - 30))
-        # screen.blit(forest_image_2, ((x * width) - bg_scroll, SCREEN_HEIGHT - forest_image_2.get_height() - 20))
-        # screen.blit(forest_image_1, ((x * width) - bg_scroll, SCREEN_HEIGHT - forest_image_1.get_height() - 20))
-        # screen.blit(field_image, ((x * width) - bg_scroll, SCREEN_HEIGHT - field_image.get_height()))
+        screen.blit(background_image, ((x * width) - bg_scroll, 0))
+
+    if level == 1:
+        screen.blit(wasd_image, (250 - bg_scroll, 80))
 
 
 def reset_level():
@@ -941,12 +960,12 @@ def reset_level():
 
 # Run the game YAY!!!
 run = True
-soundtrack = pygame.mixer.Sound('music/Soundtrack.wav')
-soundtrack.set_volume(0.02)
-fallingleaf = pygame.mixer.Sound('music/Fallingleaf.wav')
-pygame.mixer.music.load('music/Intro.wav')
+
+pygame.mixer.music.load('music/Soundtrack.wav')
 pygame.mixer.music.set_volume(0.1)
 pygame.mixer.music.play(-1)
+
+the_end_play = False
 while run:
     
     clock.tick(FPS)
@@ -970,13 +989,9 @@ while run:
 
         # show ammo
         draw_text(f'Ammo: {player.ammo}', font, BLACK, 10, 60)
-        # for x in range(player.ammo):
-        # screen.blit(player.ammo_type, (85 + (x * 15), 62))
 
         # show grenade
         draw_text(f'Grenade: {player.grenades}', font, BLACK, 10, 90)
-        # for x in range(player.grenades):
-        # screen.blit(player.grenades_type, (100 + (x * 15), 76))
 
         campfire_group.update()
         campfire_group.draw(screen)
@@ -1018,8 +1033,8 @@ while run:
 
         if player.alive:
             # Update player actions
-            soundtrack.play()
             if shoot:
+                player.update_action(4) # Shoot
                 player.shoot()
             elif grenade and not grenade_thrown and player.grenades > 0:
                 grenade = Grenade(
@@ -1029,8 +1044,6 @@ while run:
                 grenade_group.add(grenade)
                 player.grenades -= 1
                 grenade_thrown = True
-            if shoot:
-                player.update_action(4)
             elif player.in_air:
                 player.update_action(2)  # 2 : Jump
             elif move_left or move_right:
@@ -1055,6 +1068,15 @@ while run:
                     world = World()
                     player, health_bar = world.process_data(world_data)
 
+            elif level == 6:
+                screen.blit(end_image, (0, 0))
+                pygame.mixer.music.fadeout(1000)
+                player.grenades = 0
+                player.ammo = 0
+                if not the_end_play:
+                    the_end.play(0)
+                    the_end_play = True
+
             elif pre_level:
                 level -= 1
                 bg_scroll = 0
@@ -1071,7 +1093,8 @@ while run:
 
         else:
             screen_scroll = 0
-            level = 1
+            level = 5
+            screen.blit(game_over_image, (200, 125))
             if restart_button.draw(screen):
                 bg_scroll = 0
                 world_data = reset_level()
@@ -1083,13 +1106,11 @@ while run:
                             world_data[x][y] = int(tile)
                 world = World()
                 player, health_bar = world.process_data(world_data)
+
     for event in pygame.event.get():
         # Quit Game Event
         if event.type == pygame.QUIT:
             run = False
-        if player.alive == False:
-            soundtrack.fadeout(1000)
-        if start_game == True:
             pygame.mixer.music.fadeout(1000)
         # Checking keys press or not?
         # Pressing keys...
@@ -1116,6 +1137,11 @@ while run:
             if event.key == pygame.K_q:
                 grenade = False
                 grenade_thrown = False
+
+        # Running Sound
+            if move_left or move_right:
+                run_fx.play(0)
+
 
     pygame.display.update()
 
